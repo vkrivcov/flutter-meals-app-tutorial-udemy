@@ -32,7 +32,6 @@ class MealItem extends StatelessWidget {
       }
   }
 
-
   @override
   Widget build(BuildContext context) {
     // Card is really a pre-styled container with some padding and a shadow, by
@@ -72,20 +71,31 @@ class MealItem extends StatelessWidget {
             // but will have the same size as the image that we want to load
             // NOTE 2: MemoryImage is a class that allows us to load an image
             // IMPORTANT: that widget will be displayed on the bottom of stack
-            FadeInImage(
-              // loads a placeholder or empty image (in this case) to give a
-              // better user experience so instead of having a white screen while
-              // it can load a default image (in this case a transparent image)
-              placeholder: MemoryImage(kTransparentImage),
-              image: NetworkImage(meal.imageUrl),
+            // Hero widget is an animation widget that animate widgets across
+            // different screens
+            Hero(
+              // behind the scenes will be used for identifying widget on this
+              // screen and on a target screen -> it must be unique
+              // NOTE: images for such animation is the common case, but its not
+              // limited to images only
+              tag: meal.id,
 
-              // fit: BoxFit.cover will make sure that the image will be
-              // stretched as we want to make image smaller
-              fit: BoxFit.cover,
-
-              // height and width would be enforced as fit will stretch the image
-              height: 200,
-              width: double.infinity,
+              // child that will be animated
+              child: FadeInImage(
+                // loads a placeholder or empty image (in this case) to give a
+                // better user experience so instead of having a white screen while
+                // it can load a default image (in this case a transparent image)
+                placeholder: MemoryImage(kTransparentImage),
+                image: NetworkImage(meal.imageUrl),
+              
+                // fit: BoxFit.cover will make sure that the image will be
+                // stretched as we want to make image smaller
+                fit: BoxFit.cover,
+              
+                // height and width would be enforced as fit will stretch the image
+                height: 200,
+                width: double.infinity,
+              ),
             ),
 
             // a very useful image where we can define how it will be positioned
