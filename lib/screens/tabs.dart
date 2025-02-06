@@ -1,13 +1,14 @@
 // a screen that loads other embedded screens
 // NOTE: this is a stateful widget as we want to manage the state of the tabs
 import 'package:flutter/material.dart';
-import 'package:flutter_meals_app_tutorial_udemy/data/dummy_dart.dart';
+import 'package:flutter_meals_app_tutorial_udemy/providers/favourites_provider.dart';
+import 'package:flutter_meals_app_tutorial_udemy/providers/filters_provider.dart';
 import 'package:flutter_meals_app_tutorial_udemy/screens/categories.dart';
-import 'package:flutter_meals_app_tutorial_udemy/screens/filters.dart';
 import 'package:flutter_meals_app_tutorial_udemy/screens/meals.dart';
+import 'package:flutter_meals_app_tutorial_udemy/widgets/main_drawer.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/meal.dart';
-import '../widgets/main_drawer.dart';
+import 'filters_global_state.dart';  // we need to import it in the class object in order to use the state
 
 const kInitialFilters = {
   Filter.glutenFree: false,
@@ -16,19 +17,27 @@ const kInitialFilters = {
   Filter.vegan: false,
 };
 
-class TabsScreen extends StatefulWidget {
+// IMPORTANT: we substituted StatefulWidget with ConsumerStatefulWidget which
+// essentially tells that its still a stateful widget, but we want to "listen"
+// for changes from the providers that we have enabled in the project
+// NOTE: if it would be StatelessWidget then we would need to extend ConsumerWidget
+class TabsScreen extends ConsumerStatefulWidget {
   const TabsScreen({super.key});
 
+  // NOTE: instead of State we are using ConsumerState now
   @override
-  State<TabsScreen> createState() {
+  ConsumerState<TabsScreen> createState() {
     return _TabsScreenState();
   }
 }
 
-class _TabsScreenState extends State<TabsScreen> {
+class _TabsScreenState extends ConsumerState<TabsScreen> {
   int _selectedPageIndex = 0;
-  final List<Meal> _favouriteMeals = [];
-  Map<Filter, bool> _selectedFilters = kInitialFilters;
+
+  // NOTE: we are not using it anymore and that properly can now be removed
+  // NOTE: not needed anymore as we are getting it from the provider
+  // final List<Meal> _favouriteMeals = [];
+  // Map<Filter, bool> _selectedFilters = kInitialFilters;
 
   void _showInfoMessage(String message) {
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -40,23 +49,24 @@ class _TabsScreenState extends State<TabsScreen> {
     );
   }
 
-  void _toggleMealFavouritesStatus(Meal meal) {
-    bool isExisting = _favouriteMeals.contains(meal);
-
-    // set state is needed here to actually rebuild the list of favourite meals
-    // and hence update the UI
-    if (isExisting) {
-      setState(() {
-        _favouriteMeals.remove(meal);
-        _showInfoMessage("Meal is no longer a favourite");
-      });
-    } else {
-      setState(() {
-        _showInfoMessage("Marked as a favourite");
-        _favouriteMeals.add(meal);
-      });
-    }
-  }
+  // NOTE: all managed by riverpod now
+  // void _toggleMealFavouritesStatus(Meal meal) {
+  //   bool isExisting = _favouriteMeals.contains(meal);
+  //
+  //   // set state is needed here to actually rebuild the list of favourite meals
+  //   // and hence update the UI
+  //   if (isExisting) {
+  //     setState(() {
+  //       _favouriteMeals.remove(meal);
+  //       _showInfoMessage("Meal is no longer a favourite");
+  //     });
+  //   } else {
+  //     setState(() {
+  //       _showInfoMessage("Marked as a favourite");
+  //       _favouriteMeals.add(meal);
+  //     });
+  //   }
+  // }
 
   void _selectPage(int index) {
     setState(() {
@@ -79,18 +89,30 @@ class _TabsScreenState extends State<TabsScreen> {
       // a back button on the device
       // NOTE: <Map<Filter, bool>> is there to tell that we are returning
       // specifically that type to the final results variable
-      final result = await Navigator.of(context).push<Map<Filter, bool>>(
+
+      // NOTE: below is a previous version of how we listened for returned data
+      // from filters
+      // final result = await Navigator.of(context).push<Map<Filter, bool>>(
+      //   MaterialPageRoute(
+      //     builder: (ctx) => FiltersScreen(currentFilters: _selectedFilters,),
+      //   ),
+      // );
+
+      // new way of just setting the screen ans state will be handled there
+      await Navigator.of(context).push<Map<Filter, bool>>(
         MaterialPageRoute(
-          builder: (ctx) => FiltersScreen(currentFilters: _selectedFilters,),
+          builder: (ctx) => FiltersScreen(),
         ),
       );
 
+      // NOTE: we are also not managing state here like this anymore and
+      // everything is done using a provider
       // we want to update the state here
-      setState(() {
-        // since results could be null we want to set a default (i.e. ??) if
-        // that would be the case
-        _selectedFilters = result ?? kInitialFilters;
-      });
+      // setState(() {
+      //   // since results could be null we want to set a default (i.e. ??) if
+      //   // that would be the case
+      //   _selectedFilters = result ?? kInitialFilters;
+      // });
 
       // BUT if you want to REPLACE the screen and will not really allow users
       // to go back to the previous screen then use pushReplacement
@@ -113,28 +135,26 @@ class _TabsScreenState extends State<TabsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final availableMeals = dummyMeals.where((meal) {
-      // if gluten free meal filter is set to true and mean is NOT gluten free,
-      // THEN I don't want to include it
-      if (_selectedFilters[Filter.glutenFree]! && !meal.isGlutenFree) {
-        return false;
-      }
-      if (_selectedFilters[Filter.lactoseFree]! && !meal.isLactoseFree) {
-        return false;
-      }
-      if (_selectedFilters[Filter.vegetarian]! && !meal.isVegetarian) {
-        return false;
-      }
-      if (_selectedFilters[Filter.vegan]! && !meal.isVegan) {
-        return false;
-      }
-      // we want to keep the meals that are not part of the above block
-      return true;
-    }).toList();
+    // NOTE: ref (riverpod property_ is essentially a listener to the provider
+    // there are 2 options:
+    // - read to reads the properties of the provider
+    // - watch to listen to the change to the build is triggered automatically
+    // IMPORTANT: official riverpod documentation suggests that we .watch as
+    // much as possible
+    // below we setup a listener to the mealsProvider so the build would be
+    // executed when mealsProvider would change
+
+    // NOTE: now instead of this we will use a chained provider that we
+    // implemented in filters_provider and has access to both meals and selected
+    // filters
+    // final meals = ref.watch(mealsProvider);
+    // final availableFilters = ref.watch(filtersProvider);
+    final availableMeals = ref.watch(filteredMealsProvider);
 
     // default is a categories screen
     Widget activePage = CategoriesScreen(
-      onToggleFavourite: _toggleMealFavouritesStatus,
+      // NOTE: state function is not passed anymore here as state is by riverpod
+      // onToggleFavourite: _toggleMealFavouritesStatus,
       availableMeals: availableMeals,
     );
     var activePageTitle = "Categories";
@@ -142,11 +162,15 @@ class _TabsScreenState extends State<TabsScreen> {
     // essentially refers to Favourites BottomNavigationBarItem as index 0
     // is Categories BottomNavigationBarItem
     if (_selectedPageIndex == 1) {
+      // add a provider watcher here
+      final favouriteMeals = ref.watch(favouriteMealsProvider);
+
       // NOTE: we are not passing any title here so App bar will not be shown
       // on the meals screen
       activePage = MealsScreen(
-        meals: _favouriteMeals,
-        onToggleFavourite: _toggleMealFavouritesStatus,
+        meals: favouriteMeals,
+        // NOTE: state function is not passed anymore here as state is by riverpod
+        // onToggleFavourite: _toggleMealFavouritesStatus,
       );
       activePageTitle = "Your Favourites";
     }
