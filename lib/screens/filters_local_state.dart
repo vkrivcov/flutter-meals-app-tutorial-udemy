@@ -1,26 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_meals_app_tutorial_udemy/providers/filters_provider.dart';
+import 'package:flutter_meals_app_tutorial_udemy/widgets/filter_item_local_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../widgets/filter_item.dart';
-
-enum Filter {
-  glutenFree,
-  lactoseFree,
-  vegetarian,
-  vegan,
-}
-
-class FiltersScreen extends StatefulWidget {
-  const FiltersScreen({super.key, required this.currentFilters});
-
-  final Map<Filter, bool> currentFilters;
+class FiltersScreen extends ConsumerStatefulWidget {
+  const FiltersScreen({super.key});
 
   @override
-  State<FiltersScreen> createState() {
+  ConsumerState<FiltersScreen> createState() {
     return _FiltersState();
   }
 }
 
-class _FiltersState extends State<FiltersScreen> {
+class _FiltersState extends ConsumerState<FiltersScreen> {
   // NOTE: old way of how we did it initially
   // we will manage state of switch list tiles here
   // bool glutenFilterSet = false;
@@ -44,11 +36,14 @@ class _FiltersState extends State<FiltersScreen> {
   void initState() {
     super.initState();
 
+    // here we can red as initial state will be executed one once
+    final activeFilters = ref.read(filtersProvider);
+
     // can in theory assign whole map
-    _filters[Filter.glutenFree] = widget.currentFilters[Filter.glutenFree]!;
-    _filters[Filter.lactoseFree] = widget.currentFilters[Filter.lactoseFree]!;
-    _filters[Filter.vegetarian] = widget.currentFilters[Filter.vegetarian]!;
-    _filters[Filter.vegan] = widget.currentFilters[Filter.vegan]!;
+    _filters[Filter.glutenFree] = activeFilters[Filter.glutenFree]!;
+    _filters[Filter.lactoseFree] = activeFilters[Filter.lactoseFree]!;
+    _filters[Filter.vegetarian] = activeFilters[Filter.vegetarian]!;
+    _filters[Filter.vegan] = activeFilters[Filter.vegan]!;
   }
 
   @override
@@ -88,7 +83,16 @@ class _FiltersState extends State<FiltersScreen> {
         // that we created
         onPopInvokedWithResult: (bool didPop, dynamic result) {
           if(didPop) return;
-          Navigator.of(context).pop(_filters);
+
+          // now instead of returning filter data we will instead update the
+          // state in the provider
+          // NOTE: since we are in the event handler we need to use read()
+          // instead of watch()
+          ref.read(filtersProvider.notifier).setFilters(_filters);
+
+          // and since we are not returning data using pop we are not returning
+          // it here anymore
+          Navigator.of(context).pop();
         },
 
         // we want to display a list of switches (useful widgets when you want to

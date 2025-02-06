@@ -7,9 +7,7 @@ import 'package:flutter_meals_app_tutorial_udemy/widgets/category_grid_item.dart
 import '../models/meal.dart';
 
 class CategoriesScreen extends StatelessWidget {
-  const CategoriesScreen({super.key, required this.onToggleFavourite, required this.availableMeals});
-
-  final void Function(Meal meal) onToggleFavourite;
+  const CategoriesScreen({super.key, required this.availableMeals});
 
   // meals after selecting filters
   final List<Meal> availableMeals;
@@ -27,8 +25,7 @@ class CategoriesScreen extends StatelessWidget {
       MaterialPageRoute(
         builder: (ctx) => MealsScreen(
           title: category.title,
-          meals: filteredMeals,
-          onToggleFavourite: onToggleFavourite,
+          meals: filteredMeals
         ),
       ),
     );

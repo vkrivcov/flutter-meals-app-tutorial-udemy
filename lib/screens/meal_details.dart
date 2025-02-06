@@ -1,23 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_meals_app_tutorial_udemy/models/meal.dart';
+import 'package:flutter_meals_app_tutorial_udemy/providers/favourites_provider.dart';
 
-import '../models/meal.dart';
-
-class MealDetailsScreen extends StatelessWidget {
-  const MealDetailsScreen(
-      {super.key, required this.meal, required this.onToggleFavourite});
+class MealDetailsScreen extends ConsumerWidget {
+  const MealDetailsScreen({super.key, required this.meal,});
 
   final Meal meal;
-  final void Function(Meal meal) onToggleFavourite;
 
+  // NOTE: in order to use riverpod provider we need to extend ConsumerWidget
+  // class as well as pass WidgetRef argument
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // since we want to change different icons based on whether meals is in
+    // favourite or not we will use the provider -> we simply check if meals
+    // is a part of favourite meals
+    final favouriteMeals = ref.watch(favouriteMealsProvider);
+    final isFavourite = favouriteMeals.contains(meal);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(meal.title),
         actions: [
           IconButton(
-            icon: const Icon(Icons.star),
-            onPressed: () => onToggleFavourite(meal),
+            icon: Icon(isFavourite ? Icons.star : Icons.star_border),
+            // NOTE: we don't use the .watch() here, but instead we use read()
+            // which will get access (with .notifier) to the
+            // FavouritesMealsNotifier and then we access toggleMealFavouriteStatus
+            // that will update the list of favourite items
+            onPressed: () {
+              final wasAdded = ref.read(favouriteMealsProvider.notifier)
+                  .toggleMealFavouriteStatus(meal);
+
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(wasAdded ? "Meal added as a favourite" : "Meal removed"),
+                    duration: const Duration(seconds: 4),
+                  )
+              );
+            }
           ),
         ],
       ),

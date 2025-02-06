@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_meals_app_tutorial_udemy/screens/tabs.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'screens/categories.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final theme = ThemeData(
   useMaterial3: true,
@@ -14,7 +13,15 @@ final theme = ThemeData(
 );
 
 void main() {
-  runApp(const App());
+  // IMPORTANT: wrapping our app with ProviderScope is very important in order
+  // to unlock BEHIND the scenes state management functionality and we are
+  // essentially wrapping ALL of the widgets here -> entire all will use those
+  // features BUT, if you know that only some nested parts of the app would need
+  // that feature it would be sufficient to wrap only that part but here we want
+  // to use everything
+  runApp(const ProviderScope(
+    child: App(),
+  ));
 }
 
 class App extends StatelessWidget {
